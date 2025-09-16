@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Please forgive me</title>
+  <style>
+    :root{
+      --bg: linear-gradient(135deg,#ffefba 0%,#ffffff 100%);
+      --accent: #ff6b6b;
+      --accent-2: #4ecdc4;
+      --card-bg: rgba(255,255,255,0.85);
+      --radius: 16px;
+      --shadow: 0 8px 30px rgba(0,0,0,0.12);
+      --glass: blur(6px);
+    }
+    *{box-sizing:border-box;font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif}
+    html,body{height:100%}
+    body{
+      margin:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--bg);
+      padding:24px;
+    }
+
+    .card{
+      width:720px;
+      max-width:100%;
+      background:var(--card-bg);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:36px;
+      text-align:center;
+      position:relative;
+      overflow:hidden;
+    }
+
+    h1{
+      margin:0 0 18px 0;
+      font-size:34px;
+      letter-spacing:0.4px;
+      color:#333;
+    }
+
+    .question{
+      font-size:18px;
+      color:#555;
+      margin-bottom:28px;
+    }
+
+    .buttons{
+      display:flex;
+      gap:16px;
+      justify-content:center;
+      align-items:center;
+      height:120px; /* ให้พื้นที่ให้ปุ่มวิ่งได้ */
+      position:relative;
+    }
+
+    button{
+      border:0;
+      cursor:pointer;
+      padding:14px 22px;
+      font-size:16px;
+      border-radius:12px;
+      box-shadow:0 6px 18px rgba(0,0,0,0.12);
+      transition: transform 180ms ease, box-shadow 180ms ease;
+      user-select:none;
+    }
+
+    button:active{ transform: translateY(2px) scale(0.99); }
+    .yes{
+      background:linear-gradient(180deg,var(--accent),#ff4b4b);
+      color:white;
+    }
+
+    .no{
+      background:linear-gradient(180deg,#f7f7f7,#e6e6e6);
+      color:#333;
+      position:absolute;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      transition: transform 120ms linear, left 120ms linear, top 120ms linear;
+    }
+
+    /* ข้อความ thank-you */
+    .thank {
+      font-size:28px;
+      color:var(--accent-2);
+      margin-top:12px;
+      opacity:0;
+      transform:translateY(10px) scale(0.98);
+      transition: opacity 360ms ease, transform 360ms cubic-bezier(.2,.9,.3,1);
+    }
+    .show-thank{ opacity:1; transform:translateY(0) scale(1); }
+
+    /* responsive */
+    @media (max-width:420px){
+      h1{ font-size:22px }
+      .question{ font-size:15px }
+      .buttons{ height:160px }
+      button{ padding:12px 18px; font-size:15px; border-radius:10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <h1>Please forgive me</h1>
+    <div class="question">ກະລຸນາ: ຍົກໂທດໃຫ້ໄດ້ບໍ?</div>
+
+    <div class="buttons" id="buttonsArea" aria-live="polite">
+      <button class="yes" id="yesBtn" aria-label="Yes">Yes</button>
+      <button class="no" id="noBtn" aria-label="No">No</button>
+    </div>
+
+    <div class="thank" id="thankText" role="status" aria-hidden="true">thank you baby ❤</div>
+  </div>
+
+  <script>
+    (function(){
+      const noBtn = document.getElementById('noBtn');
+      const yesBtn = document.getElementById('yesBtn');
+      const area = document.getElementById('buttonsArea');
+      const card = document.getElementById('card');
+      const thank = document.getElementById('thankText');
+
+      // ให้ปุ่ม NO เริ่มอยู่ข้างๆ ปุ่ม YES (เลื่อนตำแหน่งเริ่มต้น)
+      function placeNoInitial(){
+        const rect = area.getBoundingClientRect();
+        // วางที่ขวาของศูนย์กลางนิดหน่อย
+        const left = rect.width * 0.65;
+        const top = rect.height * 0.5;
+        noBtn.style.left = left + 'px';
+        noBtn.style.top = top + 'px';
+        noBtn.style.transform = 'translate(-50%,-50%)';
+      }
+      placeNoInitial();
+
+      // ย้ายปุ่ม NO ไปตำแหน่งสุ่มภายใน area โดยคงไม่เกินขอบ
+      function moveNoRandomly() {
+        const areaRect = area.getBoundingClientRect();
+        const btnRect = noBtn.getBoundingClientRect();
+
+        // พื้นที่ที่อนุญาตให้จุดศูนย์กลางของปุ่มอยู่ (padding เล็กน้อย)
+        const padding = 10;
+        const minX = padding;
+        const maxX = areaRect.width - padding;
+        const minY = padding;
+        const maxY = areaRect.height - padding;
+
+        // สุ่มตำแหน่ง (ค่าระวังอย่าให้ซ้อนปุ่ม YES เยอะ)
+        let x = Math.random() * (maxX - minX) + minX;
+        let y = Math.random() * (maxY - minY) + minY;
+
+        // ถ้ามีปุ่ม Yes อยู่ ให้พยายามหลีกเลี่ยงซ้อนทับ
+        const yesRect = yesBtn.getBoundingClientRect();
+        const relativeYes = {
+          x: yesRect.left - areaRect.left + yesRect.width/2,
+          y: yesRect.top - areaRect.top + yesRect.height/2,
+          r: Math.max(yesRect.width, yesRect.height)/1.6
+        };
+
+        // ถ้าตำแหน่งสุ่มใกล้ปุ่ม yes ให้เลื่อนไปอีกตำแหน่ง
+        let attempts = 0;
+        while (distance(x,y, relativeYes.x,relativeYes.y) < relativeYes.r + 60 && attempts < 12) {
+          x = Math.random() * (maxX - minX) + minX;
+          y = Math.random() * (maxY - minY) + minY;
+          attempts++;
+        }
+
+        // เซ็ตตำแหน่ง (position absolute ใน container)
+        noBtn.style.left = x + 'px';
+        noBtn.style.top = y + 'px';
+        noBtn.style.transform = 'translate(-50%,-50%)';
+      }
+
+      function distance(x1,y1,x2,y2){
+        const dx = x1-x2, dy = y1-y2;
+        return Math.sqrt(dx*dx + dy*dy);
+      }
+
+      // เมื่อ mouse เคลื่อนมาใกล้ปุ่ม NO -> ย้าย
+      function onMouseMove(e){
+        const areaRect = area.getBoundingClientRect();
+        const mx = e.clientX - areaRect.left;
+        const my = e.clientY - areaRect.top;
+
+        const noRect = noBtn.getBoundingClientRect();
+        const noCenter = {
+          x: noRect.left - areaRect.left + noRect.width/2,
+          y: noRect.top - areaRect.top + noRect.height/2
+        };
+
+        const dist = distance(mx,my, noCenter.x, noCenter.y);
+        const threshold = 100; // ระยะใกล้ที่ทำให้ปุ่มหนี
+
+        if (dist < threshold) {
+          moveNoRandomly();
+        }
+      }
+
+      // รองรับ touch (มือถือ): เมื่อแตะใกล้ให้ย้าย
+      function onTouchStart(e){
+        if (!e.touches) return;
+        const t = e.touches[0];
+        const areaRect = area.getBoundingClientRect();
+        const tx = t.clientX - areaRect.left;
+        const ty = t.clientY - areaRect.top;
+        const noRect = noBtn.getBoundingClientRect();
+        const noCenter = {
+          x: noRect.left - areaRect.left + noRect.width/2,
+          y: noRect.top - areaRect.top + noRect.height/2
+        };
+        const dist = distance(tx,ty, noCenter.x, noCenter.y);
+        const threshold = 120;
+        if (dist < threshold) {
+          // ย้ายให้ห่าง (animation สั้น)
+          moveNoRandomly();
+        }
+      }
+
+      // ถ้าคลิก YES -> แสดง thank you baby
+      yesBtn.addEventListener('click', function(){
+        // ซ่อนปุ่มและข้อความเดิม แล้วแสดง thank you
+        yesBtn.disabled = true;
+        noBtn.disabled = true;
+        // เพิ่มเอฟเฟ็กต์เล็กน้อย
+        thank.classList.add('show-thank');
+        thank.setAttribute('aria-hidden','false');
+
+        // ทำให้ข้อความ "Please forgive me" เปลี่ยนเป็นคำขอบคุณเล็กน้อย
+        const heading = card.querySelector('h1');
+        heading.textContent = "You made my day 🌟";
+
+        // ซ่อนปุ่มแบบนุ่มนวล
+        yesBtn.style.transition = 'transform 400ms ease, opacity 400ms ease';
+        noBtn.style.transition = 'transform 400ms ease, opacity 400ms ease';
+        yesBtn.style.opacity = 0;
+        noBtn.style.opacity = 0;
+
+        setTimeout(()=> {
+          yesBtn.style.display = 'none';
+          noBtn.style.display = 'none';
+        }, 420);
+      });
+
+      // ถ้าพยายามคลิก NO ให้ย้ายแทน (เพื่อกันกรณีใช้คีย์บอร์ด)
+      noBtn.addEventListener('click', function(e){
+        // ป้องกันการคลิกจริง ๆ
+        e.preventDefault();
+        moveNoRandomly();
+      });
+
+      // ฟังเหตุการณ์เคลื่อนเมาส์บน area
+      area.addEventListener('mousemove', onMouseMove);
+      area.addEventListener('touchstart', onTouchStart, {passive:true});
+
+      // ถ้าหน้าต่างเปลี่ยนขนาด รีเซ็ตตำแหน่งเริ่มต้น
+      window.addEventListener('resize', function(){
+        placeNoInitial();
+      });
+
+      // เพื่อความน่ารัก: หลัง 3 วินาที ให้ปุ่ม NO วิ่งไปหนึ่งครั้งก่อน
+      setTimeout(()=> moveNoRandomly(), 3000);
+
+    })();
+  </script>
+</body>
+</html>
